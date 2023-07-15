@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Param, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Body, Controller, Get, Post, Param, BadRequestException} from '@nestjs/common';
 import { Card } from '../model/card.model';
 import { CardsService } from '../service/card.service';
 import { detectCardType } from '../utils/card.util';
@@ -33,19 +33,19 @@ export class CardsController {
             throw new BadRequestException('Invalid email address');
         }
 
-        const existingCard = await this.cardsService.findByEmail(card.email);
-        if (existingCard) {
-            throw new BadRequestException('Card with this email already exists');
+        const cardsWithEmail = await this.cardsService.findAllByEmail(card.email);
+        if (cardsWithEmail.length > 0) {
+            // У этого email уже есть карточки, добавляем новую
+            const confirmationCode = crypto.randomBytes(4).toString('hex');
+            card.confirmationCode = confirmationCode;
+
+            const createdCard = await this.cardsService.create(card);
+            return createdCard.toString();
+        } else {
+            // У этого email нет карточек, добавляем первую
+            const createdCard = await this.cardsService.create(card);
+            return createdCard.toString();
         }
-
-        // Генерация кода подтверждения
-        const confirmationCode = crypto.randomBytes(4).toString('hex');
-        card.confirmationCode = confirmationCode;
-
-
-
-        const createdCard = await this.cardsService.create(card);
-        return createdCard.toString(); // Преобразование объекта Card в строку
     }
 
     @Post('email/:email/code')

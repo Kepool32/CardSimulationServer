@@ -5,7 +5,7 @@ import {MongooseModule} from "@nestjs/mongoose";
 
 @Module({
     imports: [
-        MongooseModule.forRoot("mongodb+srv://kuksoartem:user@cluster0.szaguwi.mongodb.net/CardSimuletion?retryWrites=true&w=majority"),
+        MongooseModule.forRoot("mongodb+srv://kuksoartem:user@cluster0.szaguwi.mongodb.net/CardSim?retryWrites=true&w=majority"),
         CardsModule,
     ],
 })

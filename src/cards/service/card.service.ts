@@ -51,4 +51,7 @@ export class CardsService {
         const card = await this.cardModel.findOne({ email, isConfirmed: true }).exec();
         return card ? card.toObject() as Card : null;
     }
+    async findAllByEmail(email: string): Promise<Card[]> {
+        return this.cardModel.find({ email }).exec();
+    }
 }

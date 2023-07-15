@@ -18,7 +18,7 @@ export class Card extends Document {
     @Prop({ required: true })
     expirationDate: string;
 
-    @Prop({ required: true, unique: true })
+    @Prop({ required: true })
     email: string;
 
     @Prop({ default: false })
