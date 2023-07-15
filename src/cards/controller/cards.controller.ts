@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Param, BadRequestException} from '@nestjs/common';
+import {Body, Controller, Get, Post, Param, BadRequestException, NotFoundException} from '@nestjs/common';
 import { Card } from '../model/card.model';
 import { CardsService } from '../service/card.service';
 import { detectCardType } from '../utils/card.util';
@@ -89,7 +89,10 @@ export class CardsController {
     }
 
     @Get('email/:email/confirm/:code')
-    async confirmByEmailAndCode(@Param('email') email: string, @Param('code') code: string): Promise<Card> {
+    async confirmByEmailAndCode(
+        @Param('email') email: string,
+        @Param('code') code: string,
+    ): Promise<Card[]> {
         const checkCodeDto: CheckConfirmationCodeDto = { code };
 
         const errors = await validate(checkCodeDto);
@@ -97,27 +100,38 @@ export class CardsController {
             throw new BadRequestException(errors);
         }
 
-        const card = await this.cardsService.findOneByEmail(email);
+        const cards = await this.cardsService.findAllByEmail(email);
 
-        if (!card) {
-            throw new BadRequestException('Card not found');
+        if (cards.length === 0) {
+            throw new NotFoundException('Cards not found');
         }
 
-        if (card.confirmationCode !== code) {
-            throw new BadRequestException('Invalid confirmation code');
+        const updatedCards: Card[] = [];
+
+        for (const card of cards) {
+            if (card.confirmationCode === code) {
+                card.isConfirmed = true;
+                card.confirmationCode = undefined;
+            } else {
+                card.confirmationCode = undefined;
+            }
+            updatedCards.push(card);
         }
 
-        card.isConfirmed = true;
-        card.confirmationCode = undefined;
+        const confirmedCards: Card[] = await Promise.all(
+            updatedCards.map(updatedCard =>
+                this.cardsService.update(updatedCard._id, updatedCard),
+            ),
+        );
 
-        const updatedCard = await this.cardsService.update(card._id, card);
-
-        if (!updatedCard) {
-            throw new BadRequestException('Failed to update card');
+        if (!confirmedCards.every(card => card !== null)) {
+            throw new BadRequestException('Failed to update cards');
         }
 
-        return updatedCard;
+        return confirmedCards;
     }
+
+
     @Get()
     async findAll(): Promise<Card[]> {
         return this.cardsService.findAll();
